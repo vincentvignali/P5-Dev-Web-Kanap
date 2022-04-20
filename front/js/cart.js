@@ -1,4 +1,5 @@
 // ======================= Page Builder Logic ======================= //
+
 /* 1. Retrieve the section where to insert items */
 const items = document.getElementById("cart__items");
 
@@ -245,13 +246,22 @@ const DeleteElement = (element) => {
 /* --- 5 --- */
 const isFormValid = () => {
   /**  Set a Regex Pattern **/
-  const pattern = /^\S+@\S+\.\S+$/;
-  /**  Retrieve input **/
+  const patternEmail = /^\S+@\S+\.\S+$/;
+  const patternNames = /^[A-Za-z]+$/;
+  /**  Retrieve inputs **/
   const emailInput = document.getElementById("email");
+  const firstName = document.getElementById("firstName");
+  const lastName = document.getElementById("lastName");
   /**  Compare the input with the pattern **/
-  const result = pattern.test(emailInput.value);
+  const resultEmail = patternEmail.test(emailInput.value);
+  console.log(emailInput.value);
+  const resultFirstName = patternNames.test(firstName.value);
+  console.log(firstName.value);
+  const resultLastName = patternNames.test(lastName.value);
+  console.log(lastName.value);
   /**  Return Boolean **/
-  return result;
+  const globalCheck = resultEmail && resultFirstName && resultLastName;
+  return globalCheck;
 };
 
 /* --- 6 --- */
@@ -297,20 +307,13 @@ const orderRequest = async (orderToSend) =>
 
 /* --- 8 --- */
 const sendOrder = async () => {
-  /**  Check the requirements **/
-  if (isFormValid() && !emptyBasket()) {
-    /**  Create the order **/
-    const orderToSend = createOrder();
-    /**  Send the order **/
-    const orderCompleted = await orderRequest(orderToSend);
-    /**  Return the orderID **/
-    return orderCompleted.orderId;
-  } else {
-    alert("Sorry, you need to fill the contact form first");
-    return null;
-  }
+  /**  Create the order **/
+  const orderToSend = createOrder();
+  /**  Send the order **/
+  const orderCompleted = await orderRequest(orderToSend);
+  /**  Return the orderID **/
+  return orderCompleted.orderId;
 };
-
 // ======================= Set Event Listeners ======================= //
 /* --- 1 --- */
 const setQuantityModifiers = () => {
@@ -340,12 +343,23 @@ const setOrderButton = () => {
   const orderButton = document.getElementById("order");
   orderButton.addEventListener("click", (e) => {
     e.preventDefault();
-    sendOrder()
-      .then(
-        (orderId) =>
-          (location.href = `http://localhost:5500/front/html/confirmation.html?id=${orderId}`)
-      )
-      .then(() => localStorage.clear());
+    /**  Check the requirement(1) **/
+    if (existingBasket() === true) {
+      /***  Check the requirement(2) ***/
+      if (isFormValid() === true) {
+        sendOrder()
+          .then(
+            (orderId) =>
+              (location.href = `http://localhost:5500/front/html/confirmation.html?id=${orderId}`)
+          )
+          // .then(() => localStorage.clear())
+          .catch((e) => console.log(e));
+      } else {
+        alert("Sorry, something is wrong with your form");
+      }
+    } else {
+      alert("Sorry, your basket is empty");
+    }
   });
 };
 
@@ -371,6 +385,7 @@ const main = async () => {
     computeTotalPrice();
   } else {
     emptyBasket();
+    setOrderButton();
   }
 };
 
