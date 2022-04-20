@@ -143,7 +143,8 @@ const UpdateLocalStorage = (item) => {
   const itemToDelete = currentBasket.find(
     (element) => element.id === item.id && element.color === item.color
   );
-  currentBasket.splice(currentBasket.indexOf(itemToDelete), 1);
+  const indexOfItemToDelete = currentBasket.indexOf(itemToDelete);
+  currentBasket.splice(indexOfItemToDelete, 1);
   currentBasket.push(item);
   localStorage.setItem("basket", JSON.stringify(currentBasket));
 };
@@ -153,28 +154,27 @@ const modifyQuantity = async (element) => {
   const inputQuantity = parseInt(element.value);
 
   if (inputQuantity > 0) {
-    // Recreate the Item Object
+    /**  Recreate the Item Object with new quantity **/
     const item = {
       id: element.closest("article").dataset.id.toString(),
       quantity: inputQuantity.toString(),
       color: element.closest("article").dataset.color.toString(),
     };
 
-    // Update the quantity
-    element.closest(
-      "div"
-    ).childNodes[0].textContent = `Quantité : ${inputQuantity}`;
+    /**  Update the quantity display **/
+    const itemQuantityDisplay = element.closest("div").childNodes[0];
+    itemQuantityDisplay.textContent = `Quantité : ${inputQuantity}`;
 
-    // Update the price
+    /**  Update the price display **/
     let itemPrice = parseInt(await retrieveItemPrice(item));
-    element.closest(
-      "div.cart__item__content"
-    ).childNodes[0].childNodes[2].textContent = `${
-      itemPrice * inputQuantity
-    } €`;
+    const itemPriceDisplay = element.closest("div.cart__item__content")
+      .childNodes[0].childNodes[2];
+    itemPriceDisplay.textContent = `${itemPrice * inputQuantity} €`;
 
-    // Update the local Storage
+    /**  Store the Updated item into the local Storage **/
     UpdateLocalStorage(item);
+
+    /**  Update the total price **/
     computeTotalPrice();
   } else {
     window.alert(
@@ -185,57 +185,78 @@ const modifyQuantity = async (element) => {
 
 /* --- 3 --- */
 const computeTotalPrice = async () => {
+  /**  Retrieve DOM elements and set variables **/
   const priceDisplay = document.getElementById("totalPrice");
   const quantityDisplay = document.getElementById("totalQuantity");
   let basketTotalPrice = 0;
   let basketTotalQuantity = 0;
   const currentBasket = JSON.parse(localStorage.basket);
 
+  /**  Create a hidden Basket with prices **/
   const SecretArrayWithPrices = await currentBasket.map(async (item) => {
     const itemPrice = await retrieveItemPrice(item);
     item.totalPrice = itemPrice * parseInt(item.quantity);
     return item;
   });
 
+  /**  Iterate through the hidden Basket to get Total Price **/
   for (let i = 0; i < (await SecretArrayWithPrices.length); i++) {
     const element = await SecretArrayWithPrices[i];
     basketTotalPrice += element.totalPrice;
     basketTotalQuantity += parseInt(element.quantity);
   }
+
+  /**  Insert data into Dom Element **/
   priceDisplay.textContent = basketTotalPrice;
   quantityDisplay.textContent = basketTotalQuantity;
+
+  /**  Return total Price **/
   return basketTotalPrice;
 };
 
 /* --- 4 --- */
 const DeleteElement = (element) => {
+  /**  Retrieve Data and set variables **/
   const currentBasket = JSON.parse(localStorage.basket);
   const itemToDeleteId = element.closest("article").dataset.id;
   const itemToDeleteColor = element.closest("article").dataset.color;
+
+  /**  Spot & delete the item in the basket **/
   const itemToDelete = currentBasket.find(
     (element) =>
       element.id === itemToDeleteId && element.color === itemToDeleteColor
   );
   currentBasket.splice(currentBasket.indexOf(itemToDelete), 1);
+
+  /**  Update the local storage with reduced basket **/
   localStorage.clear();
   localStorage.setItem("basket", JSON.stringify(currentBasket));
-  computeTotalPrice();
+
+  /**  Remove item card element from the DOM **/
   element.closest("article").remove();
   if (localStorage.basket === "[]") {
     emptyBasket();
   }
+
+  /**  compute total price **/
+  computeTotalPrice();
 };
 
 /* --- 5 --- */
 const isFormValid = () => {
+  /**  Set a Regex Pattern **/
   const pattern = /^\S+@\S+\.\S+$/;
+  /**  Retrieve input **/
   const emailInput = document.getElementById("email");
+  /**  Compare the input with the pattern **/
   const result = pattern.test(emailInput.value);
+  /**  Return Boolean **/
   return result;
 };
 
 /* --- 6 --- */
 const createOrder = () => {
+  /**  Retrieve data form the Dom & Local Storage **/
   const firstNameInput = document.getElementById("firstName").value;
   const lastNameInput = document.getElementById("lastName").value;
   const cityInput = document.getElementById("city").value;
@@ -244,6 +265,8 @@ const createOrder = () => {
   const currentBasket = JSON.parse(localStorage.basket);
   let productIds = [];
   currentBasket.forEach((element) => productIds.push(element.id));
+
+  /**  Create an Order Object **/
   const rawOrder = {
     contact: {
       firstName: firstNameInput,
@@ -254,12 +277,15 @@ const createOrder = () => {
     },
     products: productIds,
   };
+
+  /**  Turn it into Json Format **/
   const cleanOrder = JSON.stringify(rawOrder);
   return cleanOrder;
 };
 
 /* --- 7 --- */
 const orderRequest = async (orderToSend) =>
+  /**  Proceed to the API call with the Json element in the request body **/
   fetch("http://localhost:3000/api/products/order", {
     method: "POST",
     headers: {
@@ -271,9 +297,13 @@ const orderRequest = async (orderToSend) =>
 
 /* --- 8 --- */
 const sendOrder = async () => {
+  /**  Check the requirements **/
   if (isFormValid() && !emptyBasket()) {
+    /**  Create the order **/
     const orderToSend = createOrder();
+    /**  Send the order **/
     const orderCompleted = await orderRequest(orderToSend);
+    /**  Return the orderID **/
     return orderCompleted.orderId;
   } else {
     alert("Sorry, you need to fill the contact form first");
@@ -284,6 +314,7 @@ const sendOrder = async () => {
 // ======================= Set Event Listeners ======================= //
 /* --- 1 --- */
 const setQuantityModifiers = () => {
+  /**  Handle the change of item quantity in the basket **/
   const quantityModifiers = document.querySelectorAll(".itemQuantity");
   for (let i = 0; i < quantityModifiers.length; i++) {
     const element = quantityModifiers[i];
@@ -293,6 +324,7 @@ const setQuantityModifiers = () => {
 
 /* --- 2 --- */
 const setDeleteButtons = () => {
+  /**  Handle the delete of item quantity in the basket **/
   const deleteButtons = document.querySelectorAll(
     ".cart__item__content__settings__delete"
   );
@@ -304,6 +336,7 @@ const setDeleteButtons = () => {
 
 /* --- 3 --- */
 const setOrderButton = () => {
+  /**  Handle the Order button in the basket **/
   const orderButton = document.getElementById("order");
   orderButton.addEventListener("click", (e) => {
     e.preventDefault();
@@ -318,7 +351,9 @@ const setOrderButton = () => {
 
 // ======================= Page Builder ======================= //
 const pageBuilder = async () => {
+  /**  Retrieve items in the basket **/
   currentBasket = JSON.parse(localStorage.basket);
+  /**  Iterate to create in the Dom one card per item **/
   for (let i = 0; i < currentBasket.length; i++) {
     const element = currentBasket[i];
     await retrieveItemImage(element);
