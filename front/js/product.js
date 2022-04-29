@@ -26,6 +26,7 @@ const createItem = (product) => {
   /**  create elements **/
   const imageElement = document.createElement("img");
   imageElement.setAttribute("src", `${product.imageUrl}`);
+  imageElement.setAttribute("alt", "Photo d'un canapé");
 
   /**  insert content (image, name, price, description & colors options) **/
   itemImage.appendChild(imageElement);

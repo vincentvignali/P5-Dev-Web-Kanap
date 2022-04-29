@@ -17,6 +17,8 @@ const createItem = (product) => {
   );
   const itemWrapper = document.createElement("article");
   const itemImage = document.createElement("img");
+  itemImage.setAttribute("alt", "Photo d'un canapé");
+  // Rajouter les alts // et dans produits aussi.
   itemImage.setAttribute("src", product.imageUrl);
   const itemTitle = document.createElement("h3");
   itemTitle.textContent = product.name;
